@@ -31,8 +31,6 @@
 /* Global Variables */
 /* ~~~~~~~~~~~~~~~~ */
 
-FILE * output_file = NULL;
-
 /* Matrices of temperatures */
 /* Access to the (i, j)th entry of each matrix is through the macros above */
 double * u_current = NULL;
@@ -55,18 +53,28 @@ int num_iterations = ITERATIONS;
 /* Program Body */
 /* ~~~~~~~~~~~~ */
 
-/* Print the temperature grid to the output file */
-void output_grid(int t)
+/* Print the temperature grid to file (gnuplot compatible) */
+void output_grid(char * filename)
 {
-	fprintf(output_file, "~~ t = %.6lfs ~~\n", t*delta_t);
+	FILE * output_file = fopen(filename, "w");
+
+	if (output_file == NULL)
+	{
+		perror("output file");
+		exit(EXIT_FAILURE);
+	}
+
 	for (int i = 0; i < height; i++)
 	{
-		for (int j = 0; j < width; j++)
+		fprintf(output_file, "%.2lf", current(i,0));
+		for (int j = 1; j < width; j++)
 		{
-			fprintf(output_file, "%.1lf ", current(i,j));
+			fprintf(output_file, " %.2lf", current(i,j));
 		}
 		fprintf(output_file, "\n");
 	}
+
+	fclose(output_file);
 }
 
 int main(int argc, char ** argv)
@@ -110,7 +118,8 @@ int main(int argc, char ** argv)
 	}
 
 	#ifdef _DEBUG
-	printf("size: %dmm x %dmm, iterations: %d, delta-t: %lf\n", width, height, num_iterations, delta_t);
+	printf("size: %dmm x %dmm, iterations: %d, delta-t: %lf\n",
+				width, height, num_iterations, delta_t);
 	#endif
 
 	/* Calculate the different equation coefficient, alpha */
@@ -121,16 +130,8 @@ int main(int argc, char ** argv)
 
 	if (delta_t >= dt_limit)
 	{
-		printf("Please set a time interval less than %.5lf seconds\n", dt_limit);
-		exit(EXIT_FAILURE);
-	}
-
-	/* Open the output file for writing */
-	output_file = fopen("output.txt", "w");
-
-	if (output_file == NULL)
-	{
-		perror("output file");
+		printf("Please set a time interval less than %.5lf seconds\n",
+								 dt_limit);
 		exit(EXIT_FAILURE);
 	}
 
@@ -163,7 +164,7 @@ int main(int argc, char ** argv)
 		}
 	}
 
-	output_grid(0.0);
+	output_grid("initial.dat");
 
 	/* Calculate the heat equation coefficients */
 	const double coeff = (alpha*delta_t)/(delta_s*delta_s);
@@ -203,13 +204,12 @@ int main(int argc, char ** argv)
 
 	printf(" [done]\n");
 
-	output_grid(t);
+	output_grid("final.dat");
 
-	fclose(output_file);
 	free(u_current);
 	free(u_previous);
 
-	printf("Results written to output.txt\n");
+	printf("Results written to initial.dat, final.dat\n");
 
 	exit(EXIT_SUCCESS);
 }
