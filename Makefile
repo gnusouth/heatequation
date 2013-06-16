@@ -2,13 +2,16 @@ CC=clang
 CFLAGS=-W -Wall -pedantic -std=gnu99 -g
 LDFLAGS=-lm -lpthread
 
-BINARIES=heat
+BINARIES=heateq
 
-.PHONY: all clean
+.PHONY: all clean debug
 
 all: $(BINARIES)
 
-heat: heat.c
+heateq: heateq.c
+
+debug:
+	$(CC) $(CFLAGS) -D_DEBUG -o heateq heateq.c $(LDFLAGS)
 
 clean:
 	rm -f $(BINARIES)
