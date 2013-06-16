@@ -1,4 +1,4 @@
-heateq - 2D Heat Equation Solver
+heateq, 2D Heat Equation Solver
 ============
 
 A numerical solution to the heat equation in 2 dimensions, by Michael Sproul (C) 2013
