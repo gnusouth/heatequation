@@ -1,7 +1,23 @@
 heateq, 2D Heat Equation Solver
 ============
 
-A numerical solution to the heat equation in 2 dimensions, by Michael Sproul (C) 2013
+A numerical solution to the heat equation in 2 dimensions, by Michael Sproul © 2013
+
+### Theory
+
+The heat equation is a partial differential equation describing how a thermal system will change in time. This program deals with the two dimensional case, described by:
+
+∂u/∂t = α(∂²u/∂x² + ∂²u/∂y²)
+
+α = k/cρ
+
+k - Thermal conductivity in W per mK
+c - Specific heat capacity in J per kgK
+ρ - Density, in kg per m³
+
+u(x, y, y) describes the temperature of the system at position (x,y) and time t.
+
+The derivatives were discretised for computation, similar to the method used here: http://www.cosy.sbg.ac.at/events/parnum05/book/horak1.pdf
 
 ### Usage
 
