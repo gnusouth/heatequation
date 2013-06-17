@@ -9,10 +9,12 @@ The heat equation is a partial differential equation describing how a thermal sy
 
 ∂u/∂t = α(∂²u/∂x² + ∂²u/∂y²)
 
-α = k/cρ
+Where α = k/cρ
 
 k - Thermal conductivity in W per mK
+
 c - Specific heat capacity in J per kgK
+
 ρ - Density, in kg per m³
 
 u(x, y, y) describes the temperature of the system at position (x,y) and time t.
