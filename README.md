@@ -19,7 +19,9 @@ c - Specific heat capacity in J per kgK
 
 u(x, y, y) describes the temperature of the system at position (x,y) and time t.
 
-The derivatives were discretised for computation, similar to the method used here: http://www.cosy.sbg.ac.at/events/parnum05/book/horak1.pdf
+The derivatives were discretised for computation, as per this paper:
+
+http://www.cosy.sbg.ac.at/events/parnum05/book/horak1.pdf
 
 ### Usage
 

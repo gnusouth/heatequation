@@ -12,8 +12,8 @@
 #define CONDUCTIVITY 401.0 /* W per mK */
 #define SPEC_HEAT_CAP 390.0 /* J per kgK */
 
-#define DEFAULT_WIDTH 10 /* mm */
-#define DEFAULT_HEIGHT 10 /* mm */
+#define DEFAULT_WIDTH 20 /* mm */
+#define DEFAULT_HEIGHT 20 /* mm */
 
 #define ITERATIONS 500
 
@@ -25,7 +25,9 @@
 #define current(i,j) u_current[(i)*width + (j)]
 #define previous(i,j) u_previous[(i)*width + (j)]
 
-#define inbounds(i,j) ((i) >= 0 && (j) >= 0 && (i) <= height && (j) <= width)
+/* Functions to determine if the second derivatives exist */
+#define has_x_deriv(i,j) ((j + 1) < width && (j - 1) >= 0)
+#define has_y_deriv(i,j) ((i + 1) < height && (i - 1) >= 0)
 
 /* ~~~~~~~~~~~~~~~~ */
 /* Global Variables */
@@ -53,6 +55,15 @@ int num_iterations = ITERATIONS;
 /* Program Body */
 /* ~~~~~~~~~~~~ */
 
+/* Safely quit the program */
+void quit(int status)
+{
+	free(u_current);
+	free(u_previous);
+
+	exit(status);
+}
+
 /* Print the temperature grid to file (gnuplot compatible) */
 void output_grid(char * filename)
 {
@@ -77,11 +88,9 @@ void output_grid(char * filename)
 	fclose(output_file);
 }
 
-int main(int argc, char ** argv)
+/* A function to parse commandline arguments */
+void parse_args(int argc, char ** argv)
 {
-	printf("~~~ heateq, by Michael Sproul. 2013 ~~~\n");
-
-	/* Parse the command line arguments */
 	int opt;
 	int error = 0;
 	int retval = 0;
@@ -121,35 +130,12 @@ int main(int argc, char ** argv)
 	printf("size: %dmm x %dmm, iterations: %d, delta-t: %lf\n",
 				width, height, num_iterations, delta_t);
 	#endif
+}
 
-	/* Calculate the different equation coefficient, alpha */
-	const double alpha = (CONDUCTIVITY/(DENSITY*SPEC_HEAT_CAP));
-
-	/* Check that the time interval is small enough */
-	double dt_limit = (delta_s*delta_s)/(2*alpha);
-
-	if (delta_t >= dt_limit)
-	{
-		printf("Please set a time interval less than %.5lf seconds\n",
-								 dt_limit);
-		exit(EXIT_FAILURE);
-	}
-
-	/* Create two arrays of temperature values, current and previous */
-	u_current = malloc(width*height*sizeof(double));
-	u_previous = malloc(width*height*sizeof(double));
-
-	if (u_current == NULL || u_previous == NULL)
-	{
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-
-	/* ~~~~~~~~~~~~~~ */
-	/* Initial Values */
-	/* ~~~~~~~~~~~~~~ */
-
-	/* Make the first half of the sheet really hot, and the second cold */
+/* Set up the sheet with some starting temperatures */
+void assign_initial_temps()
+{
+	/* Example: make the first half of the sheet really hot, and the second cold */
 	for (int i = 0; i < height; i++)
 	{
 		for (int j = 0; j < width/2; j++)
@@ -164,9 +150,55 @@ int main(int argc, char ** argv)
 		}
 	}
 
+	/* Make the corners room temp? */
+	current(0,0) = 300;
+	current(0, width - 1) = 300;
+	current(height - 1, 0) = 300;
+	current(height - 1, width - 1) = 300;
+}
+
+
+/* ~ The Main function ~*/
+
+int main(int argc, char ** argv)
+{
+	/* Read commandline arguments */
+	parse_args(argc, argv);
+
+	printf("~~~ heateq, by Michael Sproul. 2013 ~~~\n");
+
+	/* Calculate the differential equation coefficient, alpha */
+	const double alpha = (CONDUCTIVITY/(DENSITY*SPEC_HEAT_CAP));
+
+	/* TODO: Add the ability to change the material properties */
+
+	/* If delta-t is too large the solution will be unstable! */
+	{
+		double dt_limit = (delta_s*delta_s)/(2*alpha);
+
+		if (delta_t >= dt_limit)
+		{
+			printf("Please set a time interval less than %.5lf seconds\n",
+								 dt_limit);
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	/* Create two arrays of temperature values, current and previous */
+	u_current = malloc(width*height*sizeof(double));
+	u_previous = malloc(width*height*sizeof(double));
+
+	if (u_current == NULL || u_previous == NULL)
+	{
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+
+	assign_initial_temps();
+
 	output_grid("initial.dat");
 
-	/* Calculate the heat equation coefficients */
+	/* Calculate the discretised heat equation coefficient */
 	const double coeff = (alpha*delta_t)/(delta_s*delta_s);
 
 	double sum = 0;
@@ -185,17 +217,28 @@ int main(int argc, char ** argv)
 		u_previous = u_current;
 		u_current = temp;
 
-		/* Recalculate the temperature at each (non edge) position */
-		for (int i = 1; i < height - 1; i++)
+		/* Recalculate the temperature at each position */
+		for (int i = 0; i < height; i++)
 		{
-			for (int j = 1; j < width - 1; j++)
+			for (int j = 0; j < width; j++)
 			{
 				sum = 0;
-				sum += previous(i + 1, j);
-				sum  += previous(i - 1, j);
-				sum += previous(i, j + 1);
-				sum += previous(i, j - 1);
-				sum -= 4*(previous(i, j));
+
+				/* Add the second y derivative, if it exists */
+				if (has_y_deriv(i,j))
+				{
+					sum +=  previous(i + 1, j) +
+						previous(i - 1, j) -
+						2*previous(i,j);
+				}
+
+				/* Add the second x derivative, if it exists */
+				if (has_x_deriv(i,j))
+				{
+					sum +=  previous(i, j + 1) +
+						previous(i, j - 1) -
+						2*previous(i, j);
+				}
 
 				current(i, j) = previous(i,j) + coeff*sum;
 			}
@@ -206,10 +249,7 @@ int main(int argc, char ** argv)
 
 	output_grid("final.dat");
 
-	free(u_current);
-	free(u_previous);
-
 	printf("Results written to initial.dat, final.dat\n");
 
-	exit(EXIT_SUCCESS);
+	quit(EXIT_SUCCESS);
 }
