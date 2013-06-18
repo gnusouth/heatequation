@@ -14,6 +14,9 @@ heateq: heateq.c
 debug:
 	$(CC) $(CFLAGS) -D_DEBUG -o heateq heateq.c $(LDFLAGS)
 
+profile:
+	$(CC) -W -Wall -pedantic -std=gnu99 -g -pg -o heateq heateq.c $(LDFLAGS)
+
 sequential:
 	$(CC) $(CFLAGS) -g -D_SEQUENTIAL -o heateq heateq.c
 

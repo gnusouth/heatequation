@@ -259,7 +259,7 @@ void *thread_calc(void * v_work)
 						2*previous(i, j);
 				}
 
-				current(i, j) = previous(i,j) + coeff*sum;
+				current(i,j) = previous(i,j) + coeff*sum;
 			}
 		}
 
@@ -274,6 +274,9 @@ void *thread_calc(void * v_work)
 			u_previous = u_current;
 			u_current = temp;
 		}
+
+		/* Wait for master thread */
+		pthread_barrier_wait(&iteration_barrier);
 	}
 
 	return NULL;

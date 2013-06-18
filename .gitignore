@@ -1,3 +1,5 @@
 heateq
 *.dat
-*.ods
+*.ods*
+gmon.out
+*cachegrind*
